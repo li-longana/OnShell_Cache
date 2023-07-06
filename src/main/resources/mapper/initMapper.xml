@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.onshell_cache.db.mapper.initMapper">
+    <insert id="addkey">
+        insert into init_index (uuid, key_name,expire_time) values (#{uuid}, #{key_name},#{expire_time})
+    </insert>
+    <insert id="addValue">
+        insert into value_table (key_uuid, key_value) values (#{key_uuid}, #{value})
+    </insert>
+
+
+
+    <update id="CreateInitTable">
+        CREATE TABLE init_index (
+                                  id INT AUTO_INCREMENT PRIMARY KEY,
+                                  uuid VARCHAR(50),
+                                  key_name VARCHAR(2550),
+                                  expire_time BIGINT
+        );
+        CREATE INDEX idx_uuid ON init_index (uuid);
+        CREATE INDEX idx_key_name ON init_index (key_name);
+        CREATE INDEX idx_expire_time ON init_index (expire_time);
+        CREATE TABLE value_table (
+                                     id INT AUTO_INCREMENT PRIMARY KEY,
+                                     key_uuid VARCHAR(50),
+                                     key_value VARCHAR(2550)
+        );
+
+        CREATE INDEX idx_key_uuid ON value_table (key_uuid);
+    </update>
+    <update id="updateValue">
+        update value_table set key_value=#{value} where key_uuid=#{key_uuid}
+    </update>
+    <update id="updatekey">
+        update init_index set expire_time=#{expire_time} where uuid=#{uuid}
+    </update>
+    <delete id="deleteKey">
+        DELETE FROM value_table WHERE key_uuid=(SELECT uuid FROM init_index WHERE key_name=#{key_name});
+        DELETE FROM init_index WHERE key_name=#{key_name}
+    </delete>
+    <update id="TimeoutDelete">
+        delete from value_table where key_uuid in (SELECT uuid FROM init_index WHERE #{TimeMillis}-expire_time >0 );
+        DELETE FROM init_index WHERE #{TimeMillis}-expire_time >0;
+    </update>
+<!--    <select id="getkeyall" resultType="java.lang.String">-->
+<!--        SELECT uuid FROM init_index WHERE key_name LIKE CONCAT(#{key_name}, '%')-->
+<!--    </select>-->
+    <select id="getvalue" resultType="java.lang.String">
+        select key_value from value_table where key_uuid=#{key_uuid}
+    </select>
+    <select id="getkey" resultType="java.lang.String">
+        SELECT uuid FROM init_index WHERE key_name=#{key_name}
+    </select>
+
+        <select id="getkeyall" resultType="com.example.onshell_cache.db.bean.Key_Value">
+        select init_index.key_name,value_table.key_value from init_index,value_table where init_index.uuid=value_table.key_uuid
+    </select>
+
+
+</mapper>
